@@ -959,6 +959,15 @@ func (rcsw *RemoteClusterServiceWatcher) repairEndpoints(ctx context.Context) er
 				rcsw.log.Debugf("Skipped repairing endpoints for %s/%s", svc.Namespace, svc.Name)
 				continue
 			}
+			gatewayAddresses, err := rcsw.resolveGatewayAddress()
+			if err != nil {
+				rcsw.log.Errorf("Failed to resolve gateway addresses: %s", err)
+				continue
+			}
+			for i := range endpoints.Subsets {
+				endpoints.Subsets[i].Addresses = gatewayAddresses
+				endpoints.Subsets[i].NotReadyAddresses = nil
+			}
 			err = rcsw.createOrUpdateEndpoints(ctx, endpoints)
 			if err != nil {
 				return RetryableError{[]error{err}}
