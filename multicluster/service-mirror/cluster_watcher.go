@@ -952,8 +952,17 @@ func (rcsw *RemoteClusterServiceWatcher) repairEndpoints(ctx context.Context) er
 		// the gateway but aren't mirroring per se any Endpoints on the
 		// target cluster, so they're also skipped.
 		if _, found := svc.Labels[consts.MirroredHeadlessSvcNameLabel]; found {
-			rcsw.log.Debugf("Skipped repairing endpoints for %s/%s", svc.Namespace, svc.Name)
-			continue
+			endpoints, err := rcsw.localAPIClient.Endpoint().Lister().Endpoints(svc.Namespace).Get(svc.Name)
+			if err != nil {
+				// The endpoints do not yet exist for the auxiliary service so
+				// there is nothing to repair.
+				rcsw.log.Debugf("Skipped repairing endpoints for %s/%s", svc.Namespace, svc.Name)
+				continue
+			}
+			err = rcsw.createOrUpdateEndpoints(ctx, endpoints)
+			if err != nil {
+				return RetryableError{[]error{err}}
+			}
 		}
 
 		endpoints, err := rcsw.localAPIClient.Endpoint().Lister().Endpoints(svc.Namespace).Get(svc.Name)
