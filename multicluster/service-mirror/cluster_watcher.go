@@ -945,7 +945,7 @@ func (rcsw *RemoteClusterServiceWatcher) repairEndpoints(ctx context.Context) er
 		// Endpoints point to auxiliary services instead of pointing to
 		// the gateway, so they're skipped.
 		if svc.Spec.ClusterIP == corev1.ClusterIPNone {
-			rcsw.log.Debugf("Skipped repairing endpoints for %s/%s", svc.Namespace, svc.Name)
+			rcsw.log.Debugf("Skipped repairing endpoints for headless mirror service %s/%s", svc.Namespace, svc.Name)
 			continue
 		}
 		// And these auxiliary services have Endpoints that point to
@@ -956,7 +956,7 @@ func (rcsw *RemoteClusterServiceWatcher) repairEndpoints(ctx context.Context) er
 			if err != nil {
 				// The endpoints do not yet exist for the auxiliary service so
 				// there is nothing to repair.
-				rcsw.log.Debugf("Skipped repairing endpoints for %s/%s", svc.Namespace, svc.Name)
+				rcsw.log.Debugf("Skipped repairing mirror endpoints for headless mirror service %s/%s", svc.Namespace, svc.Name)
 				continue
 			}
 			gatewayAddresses, err := rcsw.resolveGatewayAddress()
@@ -972,6 +972,7 @@ func (rcsw *RemoteClusterServiceWatcher) repairEndpoints(ctx context.Context) er
 			if err != nil {
 				return RetryableError{[]error{err}}
 			}
+			continue
 		}
 
 		endpoints, err := rcsw.localAPIClient.Endpoint().Lister().Endpoints(svc.Namespace).Get(svc.Name)
