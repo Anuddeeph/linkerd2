@@ -301,7 +301,10 @@ func (rcsw *RemoteClusterServiceWatcher) createHeadlessMirrorEndpoints(ctx conte
 	}
 
 	rcsw.log.Infof("Creating a new headless mirror endpoints object for headless mirror %s/%s", headlessMirrorServiceName, exportedService.Namespace)
-	err := rcsw.createOrUpdateEndpoints(ctx, headlessMirrorEndpoints)
+	// The addresses for the headless mirror service point to the Cluster IPs
+	// of auxiliary services that are tied to gateway liveness. Therefore,
+	// these addresses should always be considered ready.
+	_, err := rcsw.localAPIClient.Client.CoreV1().Endpoints(exportedService.Namespace).Create(ctx, headlessMirrorEndpoints, metav1.CreateOptions{})
 	if err != nil {
 		if svcErr := rcsw.localAPIClient.Client.CoreV1().Services(exportedService.Namespace).Delete(ctx, headlessMirrorServiceName, metav1.DeleteOptions{}); svcErr != nil {
 			rcsw.log.Errorf("failed to delete Service %s after Endpoints creation failed: %s", headlessMirrorServiceName, svcErr)
